@@ -608,7 +608,6 @@ int drawCard(int player, struct gameState *state)
         if (DEBUG) { //Debug statements
             printf("Current hand count: %d\n", count);
         }
-
         deckCounter = state->deckCount[player];//Create holder for the deck count
         state->hand[player][count] = state->deck[player][deckCounter - 1];//Add card to the hand
         state->deckCount[player]--;
@@ -683,9 +682,10 @@ int getCost(int cardNumber)
 
 int baronEffect(int choice1, struct gameState *state, int currentPlayer, int handPos) {
 	state->numBuys++;//Increase buys by 1!
-	if (choice1 > 0) { //Boolean true or going to discard an estate
+	if (choice1 > 0) { //Boolean true or going to gain an estate
 		int p = 0;//Iterator for hand!
-		int isCardActive = 0;//Flag for discard set!
+		int isCardActive = 1;//Flag for discard set!
+		//int isCardActive = 0; //bug!
 		while (isCardActive) {
 			if (state->hand[currentPlayer][p] == estate) { //Found an estate card!
 				state->coins += 4;//Add 4 coins to the amount of coins
@@ -704,12 +704,12 @@ int baronEffect(int choice1, struct gameState *state, int currentPlayer, int han
 					printf("Must gain an estate if there are any\n");
 				}
 				if (supplyCount(estate, state) > 0) {
-					gainCard(estate, state, 0, currentPlayer);
-
-					//state->supplyCount[estate]--;//Decrement estates
-					if (supplyCount(estate, state) == 0) {
-
-					}
+					gainCard(estate, state, 2, currentPlayer);
+					//originally had commented out, tests passed
+					state->supplyCount[estate]--;//Decrement estates
+				}
+				else if (supplyCount(estate, state) == 0) {
+					//do nothing
 				}
 				isCardActive = 0;//Exit the loop
 			}
@@ -720,22 +720,24 @@ int baronEffect(int choice1, struct gameState *state, int currentPlayer, int han
 	}
 	else {
 		if (supplyCount(estate, state) > 0) {
-			gainCard(estate, state, 0, currentPlayer);//Gain an estate
-
-			//state->supplyCount[estate]--;//Decrement Estates
+			gainCard(estate, state, 2, currentPlayer);//Gain an estate
+			//originally had commented out, tests passed
+			state->supplyCount[estate]--;//Decrement Estates
 		}
 	}
-
 	discardCard(handPos, currentPlayer, state, 0);
+	state->discardCount[currentPlayer]++;
 	return 0;
 
 }
 
 int discardHand(int handPos, int player, struct gameState *state, int numCardsInHand) {
-	while (numCardsInHand > 0)
+	int p;
+	for (p = 0; p < numCardsInHand; p++)
 	{
+		state->discard[player][state->discardCount[player]] = state->hand[player][p];
+		state->discardCount[player]++;
 		discardCard(handPos, player, state, 0);
-		numCardsInHand--;
 	}
 	return 0;
 }
@@ -759,7 +761,7 @@ int minionEffect(int choice1, int choice2, struct gameState *state, int currentP
 
 	//discard card from hand
 	discardCard(handPos, currentPlayer, state, 0);
-
+	state->discardCount[currentPlayer]++;
 
 	if (choice1)
 	{
@@ -767,10 +769,10 @@ int minionEffect(int choice1, int choice2, struct gameState *state, int currentP
 	}
 	else if (choice2)		//discard hand, redraw 4, other players with 5+ cards discard hand and draw 4
 	{
-		int numDiscard = 4;
+		int numDraw = 4;
 		//discard hand and draw 4 cards
 		int currPlayerNumCards = numHandCards(state);
-		minionHelper(handPos, currentPlayer, state, currPlayerNumCards, numDiscard);
+		minionHelper(handPos, currentPlayer, state, currPlayerNumCards, numDraw);
 
 		//other players discard hand and redraw if hand size > 4
 		for (int i = 0; i <= state->numPlayers; i++)
@@ -781,7 +783,7 @@ int minionEffect(int choice1, int choice2, struct gameState *state, int currentP
 				{
 					//discard hand and draw 4 cards
 					int otherPlayerNumCards = state->handCount[i];
-					minionHelper(handPos, i, state, otherPlayerNumCards, numDiscard);
+					minionHelper(handPos, i, state, otherPlayerNumCards, numDraw);
 				}
 			}
 		}
@@ -849,10 +851,10 @@ int ambassadorEffect(int choice1, int choice2, struct gameState *state, int curr
 }
 
 int isTreasureCard(int card) {
-	if (card == copper || card == silver || card == gold) {
-		return 0;
+	if ((card == copper) || (card == silver) || (card == gold)) {
+		return 1;
 	}
-	return 1;
+	return 0;
 }
 
 int isVictoryCard(int card) {
@@ -930,26 +932,28 @@ int tributeEffect(struct gameState* state, int currentPlayer, int nextPlayer, in
 
 int mineEffect(struct gameState *state, int currentPlayer, int choice1, int choice2, int handPos) {
 	int j = state->hand[currentPlayer][choice1];  //store card we will trash
-
-	if (!(isTreasureCard(choice1)))
+	int r = isTreasureCard(j);
+	int p = isTreasureCard(choice2);
+	if (r == 0)
 	{
 		return -1;
 	}
-
-	if (!(isTreasureCard(choice2)))
+	
+	if (p == 0)
 	{
-		return -1;
+		return -2;
 	}
 
 	if ((getCost(state->hand[currentPlayer][choice1]) + 4) < getCost(choice2))
 	{
-		return -1;
+		return -3;
 	}
-
+	
 	gainCard(choice2, state, 2, currentPlayer);
-
+	
 	//discard card from hand
 	discardCard(handPos, currentPlayer, state, 0);
+	state->discardCount[currentPlayer]++;
 
 	//discard trashed card
 	for (int i = 0; i < state->handCount[currentPlayer]; i++)
@@ -957,9 +961,13 @@ int mineEffect(struct gameState *state, int currentPlayer, int choice1, int choi
 		if (state->hand[currentPlayer][i] == j)
 		{
 			discardCard(i, currentPlayer, state, 1); //refactor to trash flag
+			state->discardCount[currentPlayer]++;
 			break;
 		}
 	}
+	
+	updateCoins(currentPlayer, state, 0);
+	
 	return 0;
 }
 
@@ -1401,6 +1409,7 @@ int updateCoins(int player, struct gameState *state, int bonus)
         {
             state->coins += 3;
         }
+		
     }
 
     //add bonus
