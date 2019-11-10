@@ -16,9 +16,9 @@ int main() {
 	int handPos = 0, choice1 = 0, choice2 = 0, currentPlayer = 0;
 	initializeGame(numPlayers, k, seed, &G);
 
-	printf("******************BEGIN TEST MINE CARD****************\n");
+	printf("\n\n******************BEGIN TEST MINE CARD****************\n");
 
-	printf("Test 1: Choice1 = copper, choice2 = Gold: Golden Path Correct Card Swap\n");
+	printf("\nTest 1: Choice1 = copper, choice2 = Silver: Golden Path Correct Card Swap\n");
 	
 	//instantiate current player hand
 	G.hand[currentPlayer][0] = mine;
@@ -122,7 +122,7 @@ int main() {
 
 	//instantiate current player hand
 	G.hand[currentPlayer][0] = mine;
-	G.hand[currentPlayer][1] = silver;
+	G.hand[currentPlayer][1] = copper;
 	G.hand[currentPlayer][2] = baron;
 	G.hand[currentPlayer][3] = estate;
 	G.handCount[currentPlayer] = 4;
@@ -166,6 +166,13 @@ int main() {
 	}
 	else {
 		printf("Choice 2 is a treasure card: FAILED\n");
+	}
+	//choice 2 passes the final assert that it is the correct price
+	if (result == -3) {
+		printf("Choice 2 is recognized as too expensive: PASSED\n");
+	}
+	else {
+		printf("Choice 2 is recognized as too expensive: FAILED\n");
 	}
 	//the cost difference between choice 1 and choice 2 should be no more than 3 coins
 	if (costDiff <= maxCostDiff) {
@@ -214,7 +221,7 @@ int main() {
 
 	//instantiate current player hand
 	G.hand[currentPlayer][0] = mine;
-	G.hand[currentPlayer][1] = copper;
+	G.hand[currentPlayer][1] = silver;
 	G.hand[currentPlayer][2] = baron;
 	G.hand[currentPlayer][3] = estate;
 	G.handCount[currentPlayer] = 4;
@@ -350,6 +357,7 @@ int main() {
 		printf("Supply count of Gold cards stayed the same: FAILED\n");
 	}
 	
+	printf("\n************************END TEST MINE CARD*******************\n");
 	return 0;
 
 }	

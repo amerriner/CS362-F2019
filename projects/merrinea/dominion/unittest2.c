@@ -18,10 +18,10 @@ int main() {
 	initializeGame(numPlayers, k, seed, &G);
 
 
-	printf("*****************BEGIN TEST MINION CARD*******************\n");
+	printf("\n\n*****************BEGIN TEST MINION CARD*******************\n");
 
 	//Test 1: player chooses to gain coins
-	printf("TEST 1: Choice1 = 1, Choice2 = 0: Gain 2 coins\n");
+	printf("\nTEST 1: Choice1 = 1, Choice2 = 0: Gain 2 coins\n");
 
 	//make sure the player has the minion card to play
 	G.hand[currentPlayer][0] = minion;
@@ -79,7 +79,7 @@ int main() {
 		printf("Card counts of other player not affected: FAILED\n");
 	}
 
-	printf("TEST 2: Choice1 = 0, Choice2 = 1: Discard hand, draw 4; 1 player with 5+ does the same\n");
+	printf("\nTEST 2: Choice1 = 0, Choice2 = 1: Discard hand, draw 4; 1 player with 5+ does the same\n");
 	choice1 = 0; 
 	choice2 = 1;
 
@@ -131,8 +131,15 @@ int main() {
 	playerLeftDiscardCountExp = G.discardCount[currentPlayer + 1] + discarded;
 	playerRightDiscardCount = testG.discardCount[currentPlayer + 2];
 	playerRightDiscardCountExp = G.discardCount[currentPlayer + 2];
-	
-	//# hand cards should be one less for discarding minion
+
+	//# of deck cards should be 4 less than originally
+	if (testNumDeck == numDeckExpected) {
+		printf("Correct number of deck cards: PASSED\n");
+	}
+	else {
+		printf("Correct number of deck cards: FAILED\n");
+	}
+	//# hand cards should be one less for discarding 5 cards gaining 4
 	if (testNumHandCards == expectedNumHandCards) {
 		printf("Correct number of handcards: PASSED\n");
 	} else {
@@ -145,7 +152,7 @@ int main() {
 	else {
 		printf("Correct number of Actions: FAILED\n");
 	}
-	//should have 6 more card in discard from discarded minion and discarded cards
+	//should have 5 more card in discard from discarded minion and discarded cards
 	if (discardTest == discardExpected) {
 		printf("Correct number of cards in discard pile: PASSED\n");
 	}
@@ -167,7 +174,7 @@ int main() {
 		printf("Card counts of right player not affected: FAILED\n");
 	}
 
-	printf("\n****************TEST MINION CARD COMPLETE*******************\n")
+	printf("\n****************TEST MINION CARD COMPLETE*******************\n");
 
 	return 0;
 }

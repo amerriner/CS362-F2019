@@ -764,7 +764,7 @@ int minionEffect(int choice1, int choice2, struct gameState *state, int currentP
 	state->discardCount[currentPlayer]++;
 
 	if (choice1)
-	{
+	{	//bug, should be state->coins + 2;
 		state->coins = state->coins + 1;
 	}
 	else if (choice2)		//discard hand, redraw 4, other players with 5+ cards discard hand and draw 4
@@ -775,7 +775,8 @@ int minionEffect(int choice1, int choice2, struct gameState *state, int currentP
 		minionHelper(handPos, currentPlayer, state, currPlayerNumCards, numDraw);
 
 		//other players discard hand and redraw if hand size > 4
-		for (int i = 0; i <= state->numPlayers; i++)
+		//bug originally had i <= state->numPlayers and broke
+		for (int i = 0; i < state->numPlayers; i++)
 		{
 			if (i != currentPlayer)
 			{
@@ -801,13 +802,14 @@ int ambassadorEffect(int choice1, int choice2, struct gameState *state, int curr
 
 	if (choice1 == handPos)
 	{
-		return -1;
+		return -2;
 	}
 
 	for (int i = 0; i < state->handCount[currentPlayer]; i++)
 	{
 		if (i != handPos && state->hand[currentPlayer][i] == state->hand[currentPlayer][choice1] && i != choice1)
 		{
+			
 			j++;
 		}
 	}
@@ -821,18 +823,20 @@ int ambassadorEffect(int choice1, int choice2, struct gameState *state, int curr
 
 	//increase supply count for chosen card by amount being discarded
 	state->supplyCount[state->hand[currentPlayer][choice1]] += choice2;
-
 	//each other player gains a copy of revealed card
 	for (int i = 0; i < state->numPlayers; i++)
 	{
+		//bug, should be != currentPlayer
 		if (i == currentPlayer)
 		{
-			gainCard(state->hand[currentPlayer][choice1], state, 0, i);
+			gainCard(state->hand[currentPlayer][choice1], state, 2, i);
 		}
 	}
 
 	//discard played card from hand
 	discardCard(handPos, currentPlayer, state, 0);
+	state->discardCount[currentPlayer]++;
+	state->discard[currentPlayer][state->discardCount[currentPlayer]] = state->hand[currentPlayer][handPos];
 
 	//trash copies of cards returned to supply
 	for (j = 0; j < choice2; j++)
@@ -841,12 +845,12 @@ int ambassadorEffect(int choice1, int choice2, struct gameState *state, int curr
 		{
 			if (state->hand[currentPlayer][i] == state->hand[currentPlayer][choice1])
 			{
+				//bug: set trashed flag to 0 so it doesn't actually trash the card
 				discardCard(i, currentPlayer, state, 0);
 				break;
 			}
 		}
 	}
-
 	return 0;
 }
 
@@ -866,15 +870,18 @@ int isVictoryCard(int card) {
 
 int tributeEffect(struct gameState* state, int currentPlayer, int nextPlayer, int handPos) {
 	int tributeRevealedCards[2] = { -1, -1 };
-
+	
 	if ((state->discardCount[nextPlayer] + state->deckCount[nextPlayer]) <= 1) {
+		//bug, should be > 0, as of now pushes all players with 1 card only in their deck to the else case
 		if (state->deckCount[nextPlayer] > 1) {
 			tributeRevealedCards[0] = state->deck[nextPlayer][state->deckCount[nextPlayer] - 1];
-			state->deckCount[nextPlayer]--;
+			state->deckCount[nextPlayer] -= 1;
+			state->discard[nextPlayer][state->discardCount[nextPlayer]] = state->deck[nextPlayer][state->deckCount[nextPlayer] - 1];
+			state->discardCount[nextPlayer]++;
 		}
 		else if (state->discardCount[nextPlayer] > 0) {
 			tributeRevealedCards[0] = state->discard[nextPlayer][state->discardCount[nextPlayer] - 1];
-			state->discardCount[nextPlayer]--;
+			state->discardCount[nextPlayer] -= 1;
 		}
 		else {
 			//No Card to Reveal
@@ -900,7 +907,7 @@ int tributeEffect(struct gameState* state, int currentPlayer, int nextPlayer, in
 			tributeRevealedCards[k] = state->deck[nextPlayer][state->deckCount[nextPlayer] - 1];
 			state->discard[nextPlayer][state->discardCount[nextPlayer]] = state->deck[nextPlayer][state->deckCount[nextPlayer] - 1];
 			state->discardCount[nextPlayer]++;
-			state->deck[nextPlayer][state->deckCount[nextPlayer]--] = -1;
+			state->deck[nextPlayer][state->deckCount[nextPlayer]-1] = -1;
 			state->deckCount[nextPlayer]--;
 		}
 	}
@@ -912,6 +919,9 @@ int tributeEffect(struct gameState* state, int currentPlayer, int nextPlayer, in
 	}
 
 	for (int i = 0; i < 2; i++) {
+		if (tributeRevealedCards[i] == -1) {
+			continue;
+		}
 		if (isTreasureCard(tributeRevealedCards[i])) { //Treasure cards
 			state->coins += 2;
 		}
@@ -927,6 +937,8 @@ int tributeEffect(struct gameState* state, int currentPlayer, int nextPlayer, in
 	}
 
 	discardCard(handPos, currentPlayer, state, 0);
+	state->discardCount[currentPlayer]++;
+	state->discard[currentPlayer][state->discardCount[currentPlayer]] = state->hand[currentPlayer][handPos];
 	return 0;
 }
 
@@ -934,6 +946,7 @@ int mineEffect(struct gameState *state, int currentPlayer, int choice1, int choi
 	int j = state->hand[currentPlayer][choice1];  //store card we will trash
 	int r = isTreasureCard(j);
 	int p = isTreasureCard(choice2);
+	//originally if (r != 0) 
 	if (r == 0)
 	{
 		return -1;
