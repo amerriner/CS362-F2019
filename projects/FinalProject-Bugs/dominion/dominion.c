@@ -837,7 +837,7 @@ int cardEffect(int card, int choice1, int choice2, int choice3, struct gameState
                 break;
             }
         }
-
+		updateCoins(currentPlayer, state, 0);
         return 0;
 
     case remodel:
